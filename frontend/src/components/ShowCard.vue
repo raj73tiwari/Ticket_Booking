@@ -2,7 +2,7 @@
 
 import { ref,defineProps } from 'vue';
 
-// const props = defineProps(['show'])
+const props = defineProps(['show'])
 const show = {
   name: 'Music Festival',
   price: '$40',
@@ -84,7 +84,7 @@ const booked=ref(false)
    
   </template>
   
-  <style>
+  <style >
 .show-action{
     height: 100%;
     width: 100%;

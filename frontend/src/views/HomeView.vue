@@ -17,16 +17,11 @@ const getTheatre = async () => {
     showTheatre.value = response.data
   }
   catch (error) {
-    if (error.response && (error.response.status === 422 || error.response.status === 406)) {
-
-      toast.error(error.response.data.message)
-
-    }
-    else {
+    
       toast.error("Server Error !")
       if (error.response) {
         console.log(error.response)
-      }
+      
     }
   }
 
@@ -63,7 +58,7 @@ watch(searched, () => {
       <TheatreForm @closed=handleForm v-if="isForm"/>
     <div class="row">
       <div class="col-4">
-        <button type="button" class="btn btn-primary" @click="isForm = !isForm"><i
+        <button type="button" v-if="userStore.isAdmin()" class="btn btn-primary" @click="isForm = !isForm"><i
             class="bi bi-plus-circle me-2"></i>Theatre</button>
       </div>
       <div class="col-4">
@@ -100,6 +95,7 @@ h1 {
 
 .view {
   position: relative;
+  min-height: 100vh;
 }
 
 

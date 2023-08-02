@@ -26,7 +26,6 @@ if(props.theatre){
     name.value=props.theatre.name
     seat.value=props.theatre.capacity
     address.value=props.theatre.address
-    up_img.value=img.value
     img.value=getImageUrl(props.theatre.image_name)
 }
 
@@ -114,7 +113,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-    <div class="conta">
+    <div class="cont">
 
         <h1 v-if="props.theatre" class="mb-4 mt-4">Update Theatre</h1>
         <h1 v-else class="mb-4 mt-4">Create Theatre</h1>
@@ -131,8 +130,8 @@ const handleSubmit = async () => {
                 <input type="text" class="form-control mb-1 " id="inputName" v-model="name"
                     placeholder="Enter Theatre Name">
                 <div class="addr">
-                    <p class="card-text"><i class="bi bi-shop-window me-2 ms-1"></i>Tickets Available :</p>
-                    <input type="text" class="form-control mb-1 mt-1" id="inputNumber" v-model="seat" placeholder="Enter"
+                    <p class="card-text"><i class="bi bi-shop-window me-2 ms-1"></i>Seating Capacity :</p>
+                    <input type="number" class="form-control mb-1 mt-1" id="inputNumber" v-model="seat" placeholder="Enter"
                         style="max-width: 40%; margin-left: 5%;">
                 </div>
 
@@ -154,13 +153,20 @@ const handleSubmit = async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css?family=Belanosima|Patua+One|Pacifico');
 
-.conta {
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.cont {
     display: flex;
     align-items: center;
     flex-direction: column;
     position: absolute;
     top: 0;
     left: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(4, 0, 5, 0.95);

@@ -26,7 +26,7 @@ const emit = defineEmits(['closed'])
     display: flex;
     align-items: center;
     flex-direction: column;
-    position: absolute;
+    position: absolute; 
     top: 0;
     left: 0;
     width: 100%;

@@ -8,6 +8,7 @@ import Alert from '../components/Alert.vue';
 import {useRouter} from "vue-router"
 import { useToast } from 'vue-toastification';
 import TheatreForm from '../components/TheatreForm.vue';
+import AddShow from '../components/AddShow.vue';
 const toast = useToast();
 
 const router=useRouter()
@@ -17,6 +18,7 @@ const name=ref('')
 const curr_theat=ref(null)
 const isDelete=ref(false)
 const isUpdate=ref(false)
+const isAddShow=ref(false)
 
 const getTheatre = async () => {
   try {
@@ -47,6 +49,14 @@ const handleUpdate = async (val) => {
   isUpdate.value = !isUpdate.value
   if(val){
     await getTheatre()
+  }
+  
+}
+const handleAddShow = async (val) => {
+  isAddShow.value = !isAddShow.value
+  if(val){
+    // await getTheatre()
+    console.log('get theatre')
   }
   
 }
@@ -82,11 +92,13 @@ const handleDelete=async(val)=>{
 <div class="view">
   <Alert v-if="isDelete" @closed="handleDelete"/>
   <TheatreForm v-if="isUpdate" :theatre="curr_theat" @closed="handleUpdate"/>
+  <AddShow v-if="isAddShow" :t_id="curr_theat.id" @closed="handleAddShow"/>
 
     <div class="row">
       <div class="col-4">
-        <button type="button" class="btn btn-primary me-5 " @click="isUpdate=!isUpdate"><i class="bi bi-arrow-up-circle me-2"></i>Update</button>
-        <button type="button" class="btn btn-del" @click="isDelete=!isDelete"><i class="bi bi-trash"></i></button>
+        <button type="button" class="btn btn-primary me-3 " @click="isUpdate=!isUpdate"><i class="bi bi-arrow-up-circle me-2"></i>Update</button>
+        <button type="button" class="btn btn-del me-3" @click="isDelete=!isDelete"><i class="bi bi-trash"></i></button>
+        <button type="button" class="btn btn-primary me-5 " style="background-color: rgb(15, 128, 128); border-color: rgb(15, 128, 128)" @click="isAddShow=!isAddShow"><i class="bi bi-plus-circle me-2 "></i>Add Show</button>
       </div>
       <div class="col-4">
 
@@ -102,7 +114,7 @@ const handleDelete=async(val)=>{
     </div>
  
   <div class="contain">
-  <ShowCard/>
+  
   <ShowCard/>
   </div>
   </div>

@@ -7,6 +7,7 @@ import ProfileView from '../views/ProfileView.vue'
 import TheatreView from '../views/TheatreView.vue'
 import Four04View from '../views/Four04View.vue'
 import AdminView from '../views/AdminView.vue'
+import AllView from '../views/AllView.vue'
 import { useUserStore } from '../stores/users';
 import { useToast } from 'vue-toastification';
 
@@ -61,6 +62,22 @@ const router = createRouter({
     path: '/admin',
     name: 'Admin',
     component: AdminView,
+    beforeEnter: (to, from, next) => {
+      const userStore = useUserStore()
+      const toast = useToast();
+      
+      if (userStore.isAdmin()) {
+        next();
+      } else {
+        toast.error("Error : Restricted....redirecting !")
+        next('/');
+      }
+    },
+  },
+  {
+    path: '/info/:list',
+    name: 'Info',
+    component: AllView,
     beforeEnter: (to, from, next) => {
       const userStore = useUserStore()
       const toast = useToast();
