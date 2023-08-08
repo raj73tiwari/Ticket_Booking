@@ -19,7 +19,7 @@ const getTheatre = async () => {
   try {
     const response = await axios.get('/theatre')
     theatres.value = response.data
-    console.log(response.data)
+
   }
   catch (error) {
 
@@ -35,7 +35,7 @@ const getUser = async () => {
   try {
     const response = await axios.get('/user')
     users.value = response.data
-    console.log(response.data)
+
   }
   catch (error) {
 
@@ -51,7 +51,23 @@ const getShow = async () => {
     const response = await axios.get('/show')
     shows.value = response.data
     showShow.value = response.data
-    console.log(response.data)
+
+  }
+  catch (error) {
+
+    toast.error("Server Error !")
+    if (error.response) {
+      console.log(error.response)
+    }
+  }
+
+}
+const exportedFiles = ref([])
+
+const getExports = async () => {
+  try {
+    const response = await axios.get('/get_exported_files')
+    exportedFiles.value = response.data
   }
   catch (error) {
 
@@ -68,7 +84,6 @@ const getShow = async () => {
 const showShow = ref([])
 const searched = ref("")
 watch(searched, () => {
-  console.log(searched)
   showShow.value = shows.value.filter(s => s.name.toLowerCase().includes(searched.value.toLowerCase()) || s.tags.toLowerCase().includes(searched.value.toLowerCase()))
 })
 
@@ -76,6 +91,7 @@ onMounted(() => {
   getTheatre()
   getUser()
   getShow()
+  getExports()
 });
 
 const handleSForm = async (val) => {
@@ -86,15 +102,47 @@ const handleSForm = async (val) => {
 
 }
 const handleTForm = async (val) => {
-  t_form.value = t_form.value
+  t_form.value = !t_form.value
   if (val) {
     await getTheatre()
   }
 
 }
+
+
+const downloadFile = async (filename) => {
+  try {
+    const downloadUrl = `/download/${filename}`;
+    const response = await axios.get(downloadUrl, { responseType: 'blob' });
+
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+  catch (error) {
+
+    if (error.response && error.response.status === 404) {
+
+      toast.error(error.response.data.message)
+
+    }
+    else {
+      toast.error("Server Error !")
+      if (error.response) {
+        console.log(error.response)
+      }
+    }
+  }
+};
 const t_list = ref(false)
 const s_list = ref(true)
 const u_list = ref(false)
+const e_list = ref(false)
 
 const t_form = ref(false)
 const s_form = ref(false)
@@ -111,27 +159,36 @@ const s_form = ref(false)
 
     <h1 class="text-center pt-3 ">Admin Panel</h1>
     <div class="row">
-      <div class="col-4">
-        <div class="info" @click=" t_list = true, u_list = false, s_list = false">
+      <div class="col-3">
+        <div class="info" @click=" t_list = true, u_list = false, s_list = false, e_list = false">
           <h4>Total Theatres</h4>
-          <p><i class="bi bi-building-fill me-2" style="color: rgb(228, 210, 47);"></i>{{ theatres ? theatres.length : "..."
+          <p><i class="bi bi-building-fill me-2" style="color: rgb(228, 210, 47);"></i>{{ theatres ? theatres.length :
+            "..."
           }}</p>
         </div>
         <button type="button" class="btn btn-primary " @click="t_form = !t_form"><i
             class="bi bi-plus-circle me-2"></i>Theatre</button>
       </div>
-      <div class="col-4">
-        <div class="info" @click="s_list = true, t_list = false, u_list = false">
+      <div class="col-3">
+        <div class="info" @click="s_list = true, t_list = false, u_list = false, e_list = false">
           <h4>Total Shows</h4>
-          <p><i class="bi bi-film me-3" style="color: #35b389; font-size: 35px;"></i>{{ shows ? shows.length : "..." }}</p>
+          <p><i class="bi bi-film me-3" style="color: #35b389; font-size: 35px;"></i>{{ shows ? shows.length : "..." }}
+          </p>
         </div>
         <button type="button" class="btn btn-primary " @click="s_form = !s_form"><i
             class="bi bi-plus-circle me-2"></i>Show</button>
       </div>
-      <div class="col-4" style="margin-top: -0.1rem;">
-        <div class="info" @click="u_list = true, t_list = false, s_list = false">
+      <div class="col-3" style="margin-top: -0.1rem;">
+        <div class="info" @click="u_list = true, t_list = false, s_list = false, e_list = false">
           <h4>Total Users</h4>
           <p><i class="bi bi-people-fill me-3" style="color: #b33535;"></i>{{ users ? users.length : "..." }}</p>
+        </div>
+      </div>
+      <div class="col-3" style="margin-top: -0.1rem;">
+        <div class="info" @click="e_list = true, t_list = false, s_list = false, u_list = false">
+          <h4>Exports</h4>
+          <p><i class="bi bi-filetype-csv me-3" style="color: #63b335;"></i>{{ exportedFiles ? exportedFiles.length :
+            "..." }}</p>
         </div>
       </div>
 
@@ -204,10 +261,39 @@ const s_form = ref(false)
       </div>
     </div>
 
+
+    <div class="list">
+      <h2 class="text-center mb-4">Exported Files:</h2>
+      <table class="table table-dark table-striped">
+        <thead>
+          <tr>
+            <th scope="col" style="font-weight: 900;">Name</th>
+            <th scope="col" style="font-weight: 900;">Download</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="file in exportedFiles">
+            <td>{{ file }}</td>
+            <td class="download" @click="downloadFile(file)">download <i class="bi bi-download me-3"></i></td>
+
+          </tr>
+
+        </tbody>
+      </table>
+
+    </div>
   </div>
 </template>
   
 <style scoped>
+.download {
+  color: #f80404;
+}
+
+.download:hover {
+  cursor: pointer;
+}
+
 h1 {
   font-family: 'Belanosima';
   letter-spacing: 2px;
@@ -242,7 +328,7 @@ button.btn.btn-del {
 
 }
 
-.col-4 {
+.col-3 {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -300,12 +386,12 @@ button.btn.btn-primary {
 
 }
 
-.col-4 {
+.col-3 {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4%;
+  padding: 2%;
   margin: auto;
 }
 
@@ -352,5 +438,6 @@ h2 {
 .list {
   max-width: 100vw;
   padding: 5%;
-}</style>
+}
+</style>
   

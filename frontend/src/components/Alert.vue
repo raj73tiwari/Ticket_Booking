@@ -12,8 +12,8 @@ const emit = defineEmits(['closed'])
 
             <h4 class="text-center">are you sure ?</h4>
             <div class="buttons mt-5">
-                <button class="close" @click="emit('closed',false)"><i class="bi bi-x-circle me-1"></i> Close</button>
-                <button class="confirm"  @click="emit('closed',true)"   ><i class="bi bi-check-circle" ></i> Confirm</button>
+                <button class="close" @click="emit('closed', false)"><i class="bi bi-x-circle me-1"></i> Close</button>
+                <button class="confirm" @click="emit('closed', true)"><i class="bi bi-check-circle"></i> Confirm</button>
             </div>
         </div>
 
@@ -26,7 +26,7 @@ const emit = defineEmits(['closed'])
     display: flex;
     align-items: center;
     flex-direction: column;
-    position: absolute; 
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -41,14 +41,15 @@ const emit = defineEmits(['closed'])
     background: rgb(150, 78, 78);
 }
 
-.confirm{
-    background-color: #28A745; 
+.confirm {
+    background-color: #28A745;
     width: 30%;
     padding: 0%;
     margin-left: auto;
     margin-right: auto;
-    
+
 }
+
 .confirm:hover {
     background: #0b6821;
 }
@@ -77,7 +78,7 @@ button {
     padding: 0%;
     margin-left: auto;
     margin-right: auto;
-    
+
 
 
 

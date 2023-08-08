@@ -118,7 +118,7 @@ const handleSubmit = async () => {
         <h1 v-if="props.show" class="mb-4 mt-4">Update Show</h1>
         <h1 v-else class="mb-4 mt-4">Create Show</h1>
 
-       
+
 
 
         <div class="show-card dark-theme">
@@ -129,31 +129,31 @@ const handleSubmit = async () => {
                 <input type="file" accept=".jpeg,.jpg,.png" id="photo-upload" @change="handleUpload">
             </div>
             <div class="contain">
-                
-                        <div class="show-details">
-                            <div class="show-header">
-                                <input type="text" class="form-control mb-1 " id="inputName" v-model="name"
-                    placeholder="Enter Show Name">
-                            </div>
-                            <div class="show-info">
-                                <div class="show-row">
-                                    
-                                    
-                                    <p class="show-rating">
-                                        <i class="bi bi-star icon " style="color: rgb(194, 194, 48);"></i>
-                                 
-                                    </p>
-                                    <input type="number"  class="form-control mb-1 mt-1" id="inputNumber" v-model="rating" placeholder="Enter Rating"
-                        style="max-width: 30%;">
-                                </div>
-                            </div>
-                            <div class="show-tags">
-                                <span class="tag">tags :</span>
-                                <input type="text"  class="form-control ms-4" id="inputTags" v-model="tags" placeholder="Enter Tags (CSV)"
-                        style="max-width: 70%;">
-                            </div>
+
+                <div class="show-details">
+                    <div class="show-header">
+                        <input type="text" class="form-control mb-1 " id="inputName" v-model="name"
+                            placeholder="Enter Show Name">
+                    </div>
+                    <div class="show-info">
+                        <div class="show-row">
+
+
+                            <p class="show-rating">
+                                <i class="bi bi-star icon " style="color: rgb(194, 194, 48);"></i>
+
+                            </p>
+                            <input type="number" class="form-control mb-1 mt-1" id="inputNumber" v-model="rating"
+                                placeholder="Enter Rating" style="max-width: 30%;">
                         </div>
-                   
+                    </div>
+                    <div class="show-tags">
+                        <span class="tag">tags :</span>
+                        <input type="text" class="form-control ms-4" id="inputTags" v-model="tags"
+                            placeholder="Enter Tags (CSV)" style="max-width: 70%;">
+                    </div>
+                </div>
+
             </div>
         </div>
 

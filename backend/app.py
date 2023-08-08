@@ -1,12 +1,11 @@
 import os
 import base64
-from flask import Flask, request, jsonify, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_migrate import Migrate
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
-from datetime import timedelta
+from datetime import timedelta, datetime
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -19,7 +18,12 @@ from flask_jwt_extended import (
 )
 from functools import wraps
 from flask_caching import Cache
+from worker import celery_init_app
+import tasks
+from celery.result import AsyncResult
+from celery.schedules import crontab
 
+from models import User, Theatre, Show, ShowSchedule, Booking,db
 
 app = Flask(__name__)
 CORS(app)
@@ -32,9 +36,13 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=2)
 app.config["CACHE_TYPE"] = "redis"
 app.config["CACHE_REDIS_URL"] = "redis://localhost:6379/0"
 
-db = SQLAlchemy(app)
+
+
 migrate = Migrate(app, db)
 cache = Cache(app)
+
+
+celery_app = celery_init_app(app)
 
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
@@ -51,94 +59,7 @@ def allowed_file(filename):
 # Models................................
 
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(120), unique=True, nullable=False)
-    email = db.Column(db.String(64), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    is_admin = db.Column(db.Boolean(), default=False)
-
-    bookings = db.relationship("Booking", back_populates="user")
-
-    @classmethod
-    def authenticate(cls, **kwargs):
-        user_name = kwargs.get("user_name")
-        password = kwargs.get("password")
-        if (not user_name) or (not password):
-            return None
-
-        user = cls.query.filter_by(user_name=user_name).first()
-        if not user or not check_password_hash(user.password, password):
-            return None
-
-        return user
-
-    def to_dict(self):
-        return dict(
-            id=self.id,
-            email=self.email,
-            user_name=self.user_name,
-            is_admin=self.is_admin,
-        )
-
-
-
-
-
-class Theatre(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), unique=True, nullable=False)
-    address = db.Column(db.String(200), nullable=False)
-    capacity = db.Column(db.Integer, nullable=False)
-    image_name = db.Column(db.String(200), nullable=False)
-
-    shows = db.relationship('ShowSchedule', backref='theatre', lazy=True)
-
-    def to_dict(self):
-        return dict(
-            id=self.id,
-            name=self.name,
-            address=self.address,
-            capacity=self.capacity,
-            image_name=self.image_name,
-        )
-
-
-class Show(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    rating = db.Column(db.Float, nullable=False)
-    tags = db.Column(db.String(300))
-    image_name = db.Column(db.String(200), nullable=False)
-
-    
-
-    def to_dict(self):
-        return dict(
-            id=self.id,
-            name=self.name,
-            rating=self.rating,
-            tags=self.tags,
-            image_name=self.image_name,
-        )
-    
-class ShowSchedule(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    theatre_id = db.Column(db.Integer, db.ForeignKey('theatre.id'), nullable=False)
-    show_id = db.Column(db.Integer, db.ForeignKey('show.id'), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    show_time = db.Column(db.DateTime, nullable=False)
-
-class Booking(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    show_id = db.Column(db.Integer, db.ForeignKey("show.id"), nullable=False)
-    theatre_id = db.Column(db.Integer, db.ForeignKey("theatre.id"), nullable=False)
-
-    user = db.relationship("User", back_populates="bookings")
-    show = db.relationship("Show")
-    theatre = db.relationship("Theatre")
-
+db.init_app(app)
 
 with app.app_context():
     db.create_all()
@@ -368,8 +289,6 @@ def update_theatre(id):
     return jsonify({"message": "Theatre updated successfully"}), 200
 
 
-
-
 @app.route("/show", methods=["GET"])
 @cache.cached(timeout=60, key_prefix="show")
 def show():
@@ -378,9 +297,6 @@ def show():
     for s in shows:
         t_show.append(s.to_dict())
     return jsonify(t_show), 200
-
-
-
 
 
 @app.route("/createShow", methods=["POST"])
@@ -431,7 +347,6 @@ def deleteShow(id):
     return jsonify({"message": "Show deleted successfully !"}), 200
 
 
-
 @app.route("/updateShow/<int:id>", methods=["POST"])
 @admin_required()
 def update_show(id):
@@ -470,31 +385,262 @@ def update_show(id):
     return jsonify({"message": "Show updated successfully"}), 200
 
 
-
-@app.route('/addShow/<int:theatre_id>', methods=['POST'])
+@app.route("/addShow/<int:theatre_id>", methods=["POST"])
 @admin_required()
 def addShow(theatre_id):
     data = request.get_json()
-    if not data['show_id'] or not data['price'] or not data['time']:
+    if not data["show_id"] or not data["price"] or not data["time"]:
         return jsonify({"message": "Please provide necessary data fields !"}), 406
-     
-    theatre = Theatre.query.get(theatre_id)
+
+    theatre = Theatre.query.filter_by(id=theatre_id).first()
     if not theatre:
-        return jsonify({'message': 'Theatre not found'}), 404
+        return jsonify({"message": "Theatre not found"}), 404
 
-
-    show = Show.query.get(data['show_id'])
+    show = Show.query.filter_by(id=data["show_id"]).first()
     if not show:
-        return jsonify({'message': 'Show not found'}), 404
+        return jsonify({"message": "Show not found"}), 404
 
-    
-    show_schedule = ShowSchedule(theatre_id=theatre_id, show_id=data['show_id'], price=data['price'], show_time=data['time'])
+    show_schedule = ShowSchedule(
+        theatre_id=theatre_id,
+        show_id=data["show_id"],
+        price=data["price"],
+        show_time=datetime.strptime(data["time"], "%Y-%m-%dT%H:%M"),
+    )
     db.session.add(show_schedule)
     db.session.commit()
+    return jsonify({"message": "Show added to the theatre successfully"}), 201
 
-    return jsonify({'message': 'Show added to the theatre successfully'}), 201
+
+@app.route("/getShows/<int:theatre_id>", methods=["GET"])
+def getTheatreShows(theatre_id):
+    print(theatre_id, 878749824)
+    theatre = Theatre.query.filter_by(id=theatre_id).first()
+    if not theatre:
+        return jsonify({"message": "Theatre not found"}), 404
+    shows = theatre.shows
+    shows_list = []
+    for show_schedule in shows:
+        show_data = {
+            'schedule_id':show_schedule.id,
+            "id": show_schedule.show.id,
+            "name": show_schedule.show.name,
+            "rating": show_schedule.show.rating,
+            "tags": show_schedule.show.tags,
+            "image_name": show_schedule.show.image_name,
+            "price": show_schedule.price,
+            "time": show_schedule.show_time.isoformat(),
+        }
+        shows_list.append(show_data)
+    shows_list.reverse()
+
+    return jsonify(shows_list), 200
 
 
+@app.route("/removeShow/<int:theatre_id>/<int:show_id>", methods=["POST"])
+@admin_required()
+def removeShow(theatre_id, show_id):
+    theatre = Theatre.query.filter_by(id=theatre_id).first()
+    if not theatre:
+        return jsonify({"message": "Theatre not found"}), 404
+
+    show = Show.query.filter_by(id=show_id).first()
+
+    if not show:
+        return jsonify({"message": "Show not found"}), 404
+
+    show_schedule = ShowSchedule.query.filter_by(
+        theatre_id=theatre_id, show_id=show_id
+    ).first()
+
+    if not show_schedule:
+        return jsonify({"message": "Show is not scheduled "}), 404
+
+    db.session.delete(show_schedule)
+    db.session.commit()
+
+    return jsonify({"message": "Show removed from the theatre successfully"}), 200
+
+
+@app.route("/theatre/<int:theatre_id>/show/<int:show_id>/schedule/<int:schedule_id>/seats", methods=["GET"])
+def getSeats(theatre_id, show_id,schedule_id):
+    theatre = Theatre.query.filter_by(id=theatre_id).first()
+    if not theatre:
+        return jsonify({"message": "Theatre not found"}), 404
+
+    show = Show.query.filter_by(id=show_id).first()
+    if not show:
+        return jsonify({"message": "Show not found"}), 404
+
+    show_schedule = ShowSchedule.query.filter_by(
+       id=schedule_id
+    ).first()
+    if not show_schedule:
+        return jsonify({"message": "Show is not scheduled in this theatre"}), 404
+
+    total_seats = theatre.capacity
+
+    booked_seats_count = Booking.query.filter_by(
+       show_schedule_id=show_schedule.id
+    ).count()
+
+    empty_seats = total_seats - booked_seats_count
+
+    return jsonify(empty_seats), 200
+
+
+@app.route("/bookShow/<int:theatre_id>", methods=["POST"])
+@jwt_required()
+def bookShow(theatre_id):
+    data = request.get_json()
+    show_id = data.get("show_id")
+    schedule_id = data.get("schedule_id")
+    user_id = data.get("user_id")
+
+    theatre = Theatre.query.filter_by(id=theatre_id).first()
+    if not theatre:
+        return jsonify({"message": "Theatre not found"}), 404
+
+    show = Show.query.filter_by(id=show_id).first()
+    if not show:
+        return jsonify({"message": "Show not found"}), 404
+
+    show_schedule = ShowSchedule.query.filter_by(id=schedule_id).first()
+    if not show_schedule:
+        return jsonify({"message": "Show is not scheduled !"}), 404
+
+    booked_seats_count = Booking.query.filter_by(
+        show_schedule_id=show_schedule.id
+    ).count()
+    if booked_seats_count >= theatre.capacity:
+        return jsonify({"message": "Housefull. Cannot book more seats."}), 400
+
+    booking = Booking(
+        user_id=user_id,
+        theatre_id=theatre_id,
+        show_id=show_id,
+        show_schedule_id=show_schedule.id,
+    )
+    db.session.add(booking)
+    db.session.commit()
+
+    return jsonify({"message": "Show Booked Successfully"}), 201
+
+
+@app.route("/bookings/<int:user_id>", methods=["GET"])
+@jwt_required()
+def userBookings(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    bookings_data = []
+    bookings = user.bookings
+    for booking in bookings:
+        booking_data = {
+            "id": booking.id,
+            "theatre_name": booking.theatre.name,
+            "show_id": booking.show_id,
+            "show_name": booking.show.name,
+            "show_tags": booking.show.tags,
+            "show_rating": booking.show.rating,
+            "show_price": booking.show_schedule.price,
+            "show_image": booking.show.image_name,
+            "show_time": booking.show_schedule.show_time.isoformat(),
+        }
+        print(booking_data)
+        bookings_data.append(booking_data)
+
+    return jsonify(bookings_data), 200
+
+
+
+
+# .................Backend Jobs......................
+
+
+@app.post("/export/<id>")
+@admin_required()
+def export(id) -> dict[str, object]:
+    theatre = Theatre.query.filter_by(id=id).first()
+    shows = theatre.shows
+    shows_list = []
+    for show_schedule in shows:
+        show_data = {
+            "id": show_schedule.show.id,
+            "name": show_schedule.show.name,
+            "rating": show_schedule.show.rating,
+            "tags": show_schedule.show.tags,
+            "image_name": show_schedule.show.image_name,
+            "price": show_schedule.price,
+            "time": show_schedule.show_time.isoformat(),
+        }
+        shows_list.append(show_data)
+    shows_list.reverse()
+    result = tasks.generate_theatre_csv.delay(theatre.to_dict(), shows_list)
+    return {"result_id": result.id}
+
+
+@app.get("/export_result/<id>")
+@admin_required()
+def export_result(id: str) -> dict[str, object]:
+    result = AsyncResult(id)
+    return {
+        "ready": result.ready(),
+        "successful": result.successful(),
+        "value": result.result if result.ready() else None,
+    }
+
+
+@app.route("/get_exported_files", methods=["GET"])
+@admin_required()
+def get_exported_files():
+    exports_folder = "exports"
+    exported_files = []
+    if os.path.exists(exports_folder):
+        exported_files = os.listdir(exports_folder)
+    return jsonify(exported_files)
+
+
+@app.route("/download/<filename>", methods=["GET"])
+@admin_required()
+def download_file(filename):
+    exports_folder = "exports"
+    file_path = os.path.join(exports_folder, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
+    else:
+        return jsonify({"error": "File not found"}), 404
+    
+
+
+
+
+# ....................Scheduled Jobs........................
+
+
+@celery_app.on_after_configure.connect
+def setup_daily_tasks(sender, **kwargs):
+    sender.add_periodic_task(
+        crontab(hour=18),
+        tasks.send_reminder_emails.s(),   
+    )
+
+
+@celery_app.on_after_configure.connect
+def setup_monthly_tasks(sender, **kwargs):
+    sender.add_periodic_task(
+        crontab(hour=5, day_of_month='L'),
+        tasks.send_entertainment_report.s(),   
+    )
+
+
+
+
+
+
+
+# ~/go/bin/MailHog
+# celery -A app:celery_app worker -l INFO
+# celery -A app:celery_app beat -l INFO
 
 
 

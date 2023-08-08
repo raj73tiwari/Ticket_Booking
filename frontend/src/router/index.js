@@ -2,12 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import SigninView from '../views/SigninView.vue'
 import AboutView from '../views/AboutView.vue'
-import SearchView from '../views/SearchView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import TheatreView from '../views/TheatreView.vue'
 import Four04View from '../views/Four04View.vue'
 import AdminView from '../views/AdminView.vue'
-import AllView from '../views/AllView.vue'
 import { useUserStore } from '../stores/users';
 import { useToast } from 'vue-toastification';
 
@@ -33,17 +31,12 @@ const router = createRouter({
       component: AboutView
     },
     {
-      path: '/search',
-      name: 'search',
-      component: SearchView
-    },
-    {
       path: '/profile',
       name: 'profile',
       component: ProfileView,
       beforeEnter: (to, from, next) => {
-      const userStore = useUserStore()
-      const toast = useToast();
+        const userStore = useUserStore()
+        const toast = useToast();
         if (userStore.isUser()) {
           next();
         } else {
@@ -54,47 +47,31 @@ const router = createRouter({
 
     },
     {
-      path:"/theatre/:id",
+      path: "/theatre/:id",
       component: TheatreView,
-      name:"theatre"
-  },
-  {
-    path: '/admin',
-    name: 'Admin',
-    component: AdminView,
-    beforeEnter: (to, from, next) => {
-      const userStore = useUserStore()
-      const toast = useToast();
-      
-      if (userStore.isAdmin()) {
-        next();
-      } else {
-        toast.error("Error : Restricted....redirecting !")
-        next('/');
-      }
+      name: "theatre"
     },
-  },
-  {
-    path: '/info/:list',
-    name: 'Info',
-    component: AllView,
-    beforeEnter: (to, from, next) => {
-      const userStore = useUserStore()
-      const toast = useToast();
-      
-      if (userStore.isAdmin()) {
-        next();
-      } else {
-        toast.error("Error : Restricted....redirecting !")
-        next('/');
-      }
+    {
+      path: '/admin',
+      name: 'Admin',
+      component: AdminView,
+      beforeEnter: (to, from, next) => {
+        const userStore = useUserStore()
+        const toast = useToast();
+
+        if (userStore.isAdmin()) {
+          next();
+        } else {
+          toast.error("Error : Restricted....redirecting !")
+          next('/');
+        }
+      },
     },
-  },
-  {
-      path:"/:catchall(.*)*",
+    {
+      path: "/:catchall(.*)*",
       component: Four04View,
-      name:"404"
-  },
+      name: "404"
+    },
   ]
 })
 

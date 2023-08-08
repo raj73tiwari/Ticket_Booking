@@ -17,11 +17,11 @@ const getTheatre = async () => {
     showTheatre.value = response.data
   }
   catch (error) {
-    
-      toast.error("Server Error !")
-      if (error.response) {
-        console.log(error.response)
-      
+
+    toast.error("Server Error !")
+    if (error.response) {
+      console.log(error.response)
+
     }
   }
 
@@ -33,10 +33,10 @@ onMounted(
 
 const handleForm = async (val) => {
   isForm.value = !isForm.value
-  if(val){
+  if (val) {
     await getTheatre()
   }
-  
+
 }
 
 const theatres = ref(null)
@@ -55,7 +55,7 @@ watch(searched, () => {
 
 <template>
   <div class="view">
-      <TheatreForm @closed=handleForm v-if="isForm"/>
+    <TheatreForm @closed=handleForm v-if="isForm" />
     <div class="row">
       <div class="col-4">
         <button type="button" v-if="userStore.isAdmin()" class="btn btn-primary" @click="isForm = !isForm"><i

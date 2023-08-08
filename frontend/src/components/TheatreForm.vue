@@ -9,11 +9,11 @@ const toast = useToast();
 const emit = defineEmits(['closed'])
 const props = defineProps({
     theatre: {
-        type:Object
+        type: Object
     }
 })
 function getImageUrl(imageFilename) {
-  return `http://localhost:5000/uploads/${imageFilename}`;
+    return `http://localhost:5000/uploads/${imageFilename}`;
 }
 
 
@@ -21,12 +21,12 @@ const name = ref('')
 const seat = ref(null)
 const address = ref('')
 const img = ref(Im)
-const up_img=ref(null)
-if(props.theatre){
-    name.value=props.theatre.name
-    seat.value=props.theatre.capacity
-    address.value=props.theatre.address
-    img.value=getImageUrl(props.theatre.image_name)
+const up_img = ref(null)
+if (props.theatre) {
+    name.value = props.theatre.name
+    seat.value = props.theatre.capacity
+    address.value = props.theatre.address
+    img.value = getImageUrl(props.theatre.image_name)
 }
 
 
@@ -35,8 +35,8 @@ const handleUpload = (e) => {
     if (file) {
         const reader = new FileReader();
         reader.onload = () => {
-            if(props.theatre){
-                up_img.value=reader.result
+            if (props.theatre) {
+                up_img.value = reader.result
             }
             img.value = reader.result;
         };
@@ -73,7 +73,7 @@ const handleSubmit = async () => {
             }
         }
     }
-    else{
+    else {
         try {
             const response = await axios.post(`updateTheatre/${props.theatre.id}`, {
                 img: up_img.value,
@@ -86,7 +86,7 @@ const handleSubmit = async () => {
 
         }
         catch (error) {
-            if (error.response && (error.response.status == 422 || error.response.status == 406 || error.response.status==404)) {
+            if (error.response && (error.response.status == 422 || error.response.status == 406 || error.response.status == 404)) {
                 toast.error(error.response.data.message)
 
             }
@@ -143,7 +143,8 @@ const handleSubmit = async () => {
             </div>
         </div>
         <div class="buttons">
-            <button type="button" class="submit me-5" @click="handleSubmit">&nbsp;{{ props.theatre? 'Update' : 'Create'  }}&nbsp;</button>
+            <button type="button" class="submit me-5" @click="handleSubmit">&nbsp;{{ props.theatre ? 'Update' : 'Create'
+            }}&nbsp;</button>
             <button type="button" class="submitt" @click="emit('closed', false)">&nbsp;Close&nbsp;</button>
         </div>
     </div>
@@ -156,9 +157,10 @@ const handleSubmit = async () => {
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }
+
 .cont {
     display: flex;
     align-items: center;

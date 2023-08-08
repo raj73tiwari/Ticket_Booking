@@ -1,29 +1,29 @@
 import { ref } from "vue";
-import {defineStore} from 'pinia';
+import { defineStore } from 'pinia';
 
-export const useUserStore= defineStore('user',()=>{
+export const useUserStore = defineStore('user', () => {
 
-    const user=ref(null)
-    
-    function setUser(data){
-        user.value=data
+    const user = ref(null)
+
+    function setUser(data) {
+        user.value = data
     }
-    function removeUser(){
-        user.value=null
+    function removeUser() {
+        user.value = null
     }
-    function isUser(){
-        if(user.value==null){
+    function isUser() {
+        if (user.value == null) {
             return false
         }
         return true
     }
-    function isAdmin(){
-        if(user.value && user.value['is_admin']){
+    function isAdmin() {
+        if (user.value && user.value['is_admin']) {
             return true
         }
         return false
     }
-    
+
     return {
         user,
         isUser,
@@ -31,6 +31,6 @@ export const useUserStore= defineStore('user',()=>{
         setUser,
         removeUser
     }
-   
 
-},{persist: true})
+
+}, { persist: true })

@@ -5,16 +5,16 @@ import axios from 'axios';
 
 const toast = useToast();
 const props = defineProps(['show', 't_id'])
-const emit = defineEmits(['closed'])
+const emit = defineEmits(['added'])
 
 const time = ref(null)
 const price = ref(null)
 
 const isForm = ref(false)
 
-const handleAdd = async() => {
+const handleAdd = async () => {
     try {
-        console.log(9878743897734)
+
         const response = await axios.post(`/addShow/${parseInt(props.t_id)}`, {
             show_id: props.show.id,
             price: price.value,
@@ -22,7 +22,7 @@ const handleAdd = async() => {
 
         });
         toast.success(response.data.message);
-        emit('closed')
+        emit('added')
 
     }
     catch (error) {
@@ -148,4 +148,5 @@ button {
     display: flex;
     flex-direction: column;
     justify-content: center;
-}</style>
+}
+</style>

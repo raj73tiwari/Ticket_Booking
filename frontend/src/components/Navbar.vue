@@ -1,10 +1,13 @@
 <script setup>
 
-import { ref ,onMounted} from 'vue';
+import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router'
 import axios from 'axios'
 import { useUserStore } from '../stores/users';
 import { useToast } from 'vue-toastification';
+import { useRouter } from "vue-router"
+const router = useRouter()
+
 const toast = useToast();
 
 const userStore = useUserStore()
@@ -16,7 +19,7 @@ onMounted(() => {
   document.addEventListener('token-refresh-failed', handleTokenRefreshFailed);
 });
 
-const handleTokenRefreshFailed = async() => {
+const handleTokenRefreshFailed = async () => {
   toast.warning('Please Login Again !');
   await logout(false)
 };
@@ -27,8 +30,9 @@ const logout = async (show) => {
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
     userStore.removeUser()
-    if(show){
-    toast.success(response.data.message)
+    router.push('/')
+    if (show) {
+      toast.success(response.data.message)
     }
   }
   catch (error) {
@@ -60,11 +64,8 @@ const logout = async (show) => {
             </RouterLink>
           </li>
           <li class="nav-item">
-            <RouterLink active-class="active" class="nav-link" to="/search"><i class="bi bi-search"></i></RouterLink>
-          </li>
-          <li class="nav-item">
-            <RouterLink v-if="userStore.isUser()" active-class="active" class="nav-link" to="/profile"><i
-                class="bi bi-person-fill"></i></RouterLink>
+            <RouterLink v-if="userStore.isUser() && !userStore.isAdmin()" active-class="active" class="nav-link"
+              to="/profile"><i class="bi bi-person-fill"></i></RouterLink>
           </li>
 
 
@@ -92,7 +93,8 @@ const logout = async (show) => {
 
           <ul class="dropdown-menu dropdown-menu-dark">
             <li>
-              <RouterLink active-class="active" class="dropdown-item" to="/profile">My Profile</RouterLink>
+              <RouterLink active-class="active" v-if="!userStore.isAdmin()" class="dropdown-item" to="/profile">My Profile
+              </RouterLink>
             </li>
             <li><a class="dropdown-item" style="cursor: pointer;" @click="logout(true)">Logout <i
                   class="bi bi-box-arrow-right ms-2 mt-2" style="color: red;"></i></a></li>
@@ -211,4 +213,5 @@ form {
 .nav-item {
   border-radius: 10px;
   margin-right: 2%
-}</style>
+}
+</style>
